@@ -1,2 +1,2 @@
 # cross
-使用netty+springboot实现的内网穿透工具
+一个由netty+springboot开发的内网穿透工具
