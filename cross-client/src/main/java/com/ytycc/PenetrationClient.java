@@ -15,10 +15,10 @@ import java.util.function.Consumer;
 
 public class PenetrationClient {
 
-
     public static final int DEFAULT_SERVER_FORWARD_PORT = 7000;
-    public static final int DEFAULT_REAL_SERVER_PORT = 8080;
     public static final String DEFAULT_SERVER_HOST = "localhost";
+    public static final int DEFAULT_REAL_SERVER_PORT = 8080;
+    public static final String DEFAULT_REAL_SERVER_HOST = "localhost";
 
     public static void main(String[] args) {
         ResourceLeakDetector.setLevel(ResourceLeakDetector.Level.ADVANCED);
@@ -27,6 +27,7 @@ public class PenetrationClient {
         if (cmd == null) return;
 
         String host = getHost(cmd);
+        String realHost = getRealHost(cmd, DEFAULT_REAL_SERVER_HOST);
         int forwardPort = getPort(cmd, "fp", DEFAULT_SERVER_FORWARD_PORT, "请输入正确的远程服务器转发端口");
         int realPort = getPort(cmd, "rp", DEFAULT_REAL_SERVER_PORT, "请输入正确的本地服务端口");
 
@@ -37,7 +38,7 @@ public class PenetrationClient {
             return;
         }
 
-        ForwardClient.Config config = new ForwardClient.Config(realPort);
+        ForwardClient.Config config = new ForwardClient.Config(realHost,realPort);
         ReceiveClient.create(host, forwardPort, config, new SynchronizedStrategy()).establish();
 //        AnalyzeUtil.startReport();
     }
@@ -69,6 +70,15 @@ public class PenetrationClient {
         return host;
     }
 
+    private static String getRealHost(CommandLine cmd, String defaultHost) {
+        String host = cmd.getOptionValue("realHost", DEFAULT_SERVER_HOST);
+        if (StringUtil.isNullOrEmpty(host)) {
+            return defaultHost;
+        }
+        return host;
+    }
+
+
     private static int getPort(CommandLine cmd, String option, int defaultPort, String errorMessage) {
         try {
             return Integer.parseInt(cmd.getOptionValue(option, String.valueOf(defaultPort)));
@@ -94,18 +104,17 @@ public class PenetrationClient {
 
     private static void printHelp(Options options) {
         HelpFormatter formatter = new HelpFormatter();
-        formatter.printHelp("PenetrationClient", options);
+        formatter.printHelp("CrossClient", options);
     }
 
 
     private static Options getOptions() {
         Options options = new Options();
         options.addOption("help", "help", false, "帮助信息");
-        options.addOption("h", "host", true, "远程服务器ip");
-        options.addOption("fp", "forwardPort", true, "远程服务器转发端口");
-        //短opt有两位,不可 -rp=8080,只能-rp 8080 e.g. -rp 8080;事实上，本来短opt应该为单字符
-        options.addOption("rp", "realPort", true, "本地服务端口,e.g. -rp 8080");
-        //短opt只有一位，可 -p=123456或-p 123456,长opt都行
+        options.addOption("h", "host", true, "远程服务器ip，默认127.0.0.1");
+        options.addOption("fp", "forwardPort", true, "远程服务器转发端口，默认7000");
+        options.addOption("rp", "realPort", true, "本地服务端口,e.g. -rp 8080，默认8080");
+        options.addOption("rh", "realHost", true, "本地服务器ip，默认127.0.0.1");
         options.addOption("p", "password", true, "密码");
         options.addOption("u", "user", true, "账号");
         return options;

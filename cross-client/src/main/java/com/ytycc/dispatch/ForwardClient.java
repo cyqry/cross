@@ -38,11 +38,14 @@ public class ForwardClient {
 
     public final Bootstrap bootstrap;
 
+
+    private final String realServerHost;
     private final int realServerPort;
 
-    private ForwardClient(int realServerPort, Subscriber<ForwardEvent> subscriber) {
+    private ForwardClient(String realServerHost, int realServerPort, Subscriber<ForwardEvent> subscriber) {
         NioEventLoopGroup group = new NioEventLoopGroup();
         this.realServerPort = realServerPort;
+        this.realServerHost = realServerHost;
         bootstrap = new Bootstrap()
                 .group(group)
                 .channel(ForwardClientNioSocketChannel.class)
@@ -65,7 +68,7 @@ public class ForwardClient {
         //统计速率
         rateTracker.record();
         try {
-            ChannelFuture future = bootstrap.connect("127.0.0.1", realServerPort);
+            ChannelFuture future = bootstrap.connect(realServerHost, realServerPort);
             future.channel().attr(ID_KEY).set(id);
             future.sync();
             return Optional.of((ForwardClientChannel) future.channel());
@@ -77,6 +80,7 @@ public class ForwardClient {
 
     public static class Builder {
         private Integer realServerPort;
+        private String realServerHost;
         private Subscriber<ForwardEvent> subscriber;
 
         public Builder realServerPort(int port) {
@@ -91,17 +95,19 @@ public class ForwardClient {
 
         public Builder withConfig(Config config) {
             this.realServerPort = config.realServerPort;
+            this.realServerHost = config.realServerHost;
             return this;
         }
 
         public ForwardClient build() {
-            Assert.assertNotNull("realServerPort must be null ", realServerPort);
-            Assert.assertNotNull("subscriber must be null ", subscriber);
-            return new ForwardClient(realServerPort, subscriber);
+            Assert.assertNotNull("realServerHost must be not null", realServerHost);
+            Assert.assertNotNull("realServerPort must be not null ", realServerPort);
+            Assert.assertNotNull("subscriber must be not null ", subscriber);
+            return new ForwardClient(realServerHost, realServerPort, subscriber);
         }
     }
 
-    public record Config(int realServerPort) {
+    public record Config(String realServerHost, int realServerPort) {
     }
 
 
