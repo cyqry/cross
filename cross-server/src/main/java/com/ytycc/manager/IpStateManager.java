@@ -57,7 +57,7 @@ public class IpStateManager {
 
 
         public synchronized boolean hasReachedErrorMaxCount() {
-            return errorTimestamps.size() <= maxAttempts;
+            return errorTimestamps.size() >= maxAttempts;
         }
     }
 }

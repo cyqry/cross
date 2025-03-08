@@ -27,7 +27,7 @@ public class PenetrationClient {
         if (cmd == null) return;
 
         String host = getHost(cmd);
-        String realHost = getRealHost(cmd, DEFAULT_REAL_SERVER_HOST);
+        String realHost = getRealHost(cmd);
         int forwardPort = getPort(cmd, "fp", DEFAULT_SERVER_FORWARD_PORT, "请输入正确的远程服务器转发端口");
         int realPort = getPort(cmd, "rp", DEFAULT_REAL_SERVER_PORT, "请输入正确的本地服务端口");
 
@@ -38,7 +38,7 @@ public class PenetrationClient {
             return;
         }
 
-        ForwardClient.Config config = new ForwardClient.Config(realHost,realPort);
+        ForwardClient.Config config = new ForwardClient.Config(realHost, realPort);
         ReceiveClient.create(host, forwardPort, config, new SynchronizedStrategy()).establish();
 //        AnalyzeUtil.startReport();
     }
@@ -62,20 +62,11 @@ public class PenetrationClient {
     }
 
     private static String getHost(CommandLine cmd) {
-        String host = cmd.getOptionValue("host", DEFAULT_SERVER_HOST);
-        if (StringUtil.isNullOrEmpty(host)) {
-            System.out.println("请输入正确的远程服务器ip");
-            return null;
-        }
-        return host;
+        return cmd.getOptionValue("h", DEFAULT_SERVER_HOST);
     }
 
-    private static String getRealHost(CommandLine cmd, String defaultHost) {
-        String host = cmd.getOptionValue("realHost", DEFAULT_SERVER_HOST);
-        if (StringUtil.isNullOrEmpty(host)) {
-            return defaultHost;
-        }
-        return host;
+    private static String getRealHost(CommandLine cmd) {
+       return cmd.getOptionValue("rh", DEFAULT_REAL_SERVER_HOST);
     }
 
 
