@@ -36,16 +36,15 @@ public class ForwardInitialAuthHandler extends ChannelInboundHandlerAdapter {
         ByteBuf buf = (ByteBuf) msg;
         String clientIp = ChannelUtil.takeIp(readChannel);
         if (!readChannel.hasAttr(AUTH_ATTR)) {
-            IpStateManager.IpState state = ipStateManager.getIpState(clientIp);
             if (!userService.authenticate(readChannel, buf)) {
-                state.incrementErrorCount();
+                ipStateManager.recordError(clientIp);
                 readChannel.writeAndFlush(Protocol.auth(false))
                         .addListener(ChannelFutureListener.CLOSE);
                 ERROR_LOGGER.info("连接校验错误!");
                 buf.release();
                 return;
             }
-            state.resetErrorCount();
+            ipStateManager.clearIp(clientIp);
 
             initializeAfterAuth(ctx);
             buf.release();

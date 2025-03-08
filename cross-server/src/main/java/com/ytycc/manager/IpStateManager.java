@@ -1,42 +1,63 @@
 package com.ytycc.manager;
 
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
+
+import java.time.Duration;
+import java.util.Deque;
+import java.util.LinkedList;
+import java.util.concurrent.TimeUnit;
 
 public class IpStateManager {
-    private final ConcurrentMap<String, IpState> ipStateMap = new ConcurrentHashMap<>();
+
+    private final Cache<String, IpState> ipCache;
+    private final int maxAttempts;
+    private final long windowMillis;
+
+
+    public IpStateManager(int windowDuration, TimeUnit windowUnit, int maxAttempts) {
+        this.maxAttempts = maxAttempts;
+        this.windowMillis = windowUnit.toMillis(windowDuration);
+        this.ipCache = Caffeine.newBuilder()
+                // 在最后一次访问后的窗口时间后过期，自动清理内存
+                .expireAfterAccess(Duration.ofMillis(windowMillis * 2))
+                .build();
+    }
+
+
+    public void recordError(String ip) {
+        IpState ipState = ipCache.get(ip, k -> new IpState());
+
+        //实现滑动窗口算法
+        synchronized (ipState) {
+            long now = System.currentTimeMillis();
+            long cutoff = now - windowMillis;
+            Deque<Long> errorTimestamps = ipState.errorTimestamps;
+            errorTimestamps.addLast(now);
+            while (!errorTimestamps.isEmpty() && errorTimestamps.getFirst() < cutoff) {
+                errorTimestamps.removeFirst();
+            }
+        }
+    }
 
     public IpState getIpState(String ip) {
-        return ipStateMap.computeIfAbsent(ip, k -> new IpState());
+        return ipCache.get(ip, k -> new IpState());
     }
 
-    public void removeConnectionState(String ip) {
-        ipStateMap.remove(ip);
+    public void clearIp(String ip) {
+        ipCache.invalidate(ip);
     }
 
-    // 定义连接状态信息，包括连接状态和校验错误次数
-    public static class IpState {
-        private boolean hasConnection = true;
-        private int errorCount = 0;
+    public class IpState {
+        private final Deque<Long> errorTimestamps;
 
-        public boolean hasConnection() {
-            return hasConnection;
+        private IpState() {
+            errorTimestamps = new LinkedList<>();
         }
 
-        public void hasConnection(boolean connected) {
-            this.hasConnection = connected;
-        }
 
-        public int errorCount() {
-            return errorCount;
-        }
-
-        public void incrementErrorCount() {
-            this.errorCount++;
-        }
-
-        public void resetErrorCount() {
-            this.errorCount = 0;
+        public synchronized boolean hasReachedErrorMaxCount() {
+            return errorTimestamps.size() <= maxAttempts;
         }
     }
 }

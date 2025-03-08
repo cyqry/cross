@@ -26,11 +26,6 @@ public class ForwardIpInterceptor extends ChannelDuplexHandler {
     //当前连接数
     private static final AtomicInteger connectionCount = new AtomicInteger(0);
 
-
-    //限制允许的最大错误次数
-    private static final int MAX_ERROR_COUNT = 3;
-
-
     private final IpStateManager ipStateManager;
 
     public ForwardIpInterceptor(IpStateManager ipStateManager) {
@@ -52,7 +47,7 @@ public class ForwardIpInterceptor extends ChannelDuplexHandler {
 
         //错误次数限制
         IpStateManager.IpState state = ipStateManager.getIpState(clientIp);
-        if (state.errorCount() >= MAX_ERROR_COUNT) {
+        if (state.hasReachedErrorMaxCount()) {
             System.out.println("拒绝连接：IP: " + clientIp + " (超过错误限制)");
             ctx.close();
             return;

@@ -17,6 +17,7 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.timeout.IdleStateHandler;
 
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 //单例的
@@ -37,7 +38,7 @@ public class ForwardServer {
     public void openForward(ReceiveServerChannelManager receiveServerChannelManager, ForwardChannelServerPool forwardChannelServerPool) {
         new Thread(() -> {
             NioEventLoopGroup group = new NioEventLoopGroup();
-            IpStateManager ipStateManager = new IpStateManager();
+            IpStateManager ipStateManager = new IpStateManager(3, TimeUnit.MINUTES, 5);
 
             try {
                 ChannelFuture future = new ServerBootstrap()
