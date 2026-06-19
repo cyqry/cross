@@ -66,8 +66,11 @@ public class ReceiveTransferHandler extends SimpleChannelInboundHandler<ByteBuf>
             assignReceiveServerChannel(ctx);
             ReceiveServerChannelEnhancer enhancer = ChannelUtil.resolveReceiveServerChannel(ctx.channel());
             if (receiveServerChannelManager.put(enhancer.longId(), channel)) {
-                resource.get().writeOpenFrame(enhancer.longId());
-                OPEN_LOGGER.info("channels.size = {}", receiveServerChannelManager.size());
+                resource.get().writeOpenFrame(enhancer.longId()).addListener(l->{
+                    if (l.isSuccess()){
+                        OPEN_LOGGER.info("channels.size = {}", receiveServerChannelManager.size());
+                    }
+                });
             } else {
                 ERROR_LOGGER.error("id:{} or channel:{} already exists.", enhancer.longId(), channel);
                 ctx.close();
